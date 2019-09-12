@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../smopslib.h"
+#include "smopslib.h"
 
 /** Creates a new SMOPS_CTX for storing data for the library.
 *
@@ -19,7 +19,7 @@ SMOPS_CTX *SMOPS_CTX_new()
 
     ctx->err_msg = (char *)malloc(sizeof(char)*ERR_MSG_BUFFER);
     if(ctx->err_msg == NULL) {
-        fprintf(stderr, "%s: ERROR! failed to allocate memorf for error message\n", LIBNAME);
+        fprintf(stderr, "%s: ERROR! failed to allocate memory for error message\n", LIBNAME);
         exit(EXIT_FAILURE);
     }
 
@@ -50,8 +50,7 @@ void SMOPS_CTX_fill_err_msg(SMOPS_CTX *ctx, char *err_msg)
 {
     int err_msg_len = strlen(err_msg);
     if(err_msg_len + 1 > ERR_MSG_BUFFER) {
-        fprintf("%s: ERROR! error message is greater than %d chars long\n",
-            LIBNAME, ERR_MSG_BUFFER);
+        fprintf(stderr, "%s: ERROR! error message is greater than %d chars long\n", LIBNAME, ERR_MSG_BUFFER);
         exit(EXIT_FAILURE);
     }
     ctx->err = 1;
@@ -59,7 +58,7 @@ void SMOPS_CTX_fill_err_msg(SMOPS_CTX *ctx, char *err_msg)
     *(ctx->err_msg + err_msg_len) = '\0';
 }
 
-/** Print the error message stored in the SMOPS_CTX
+/** Print the error message stored in the SMOPS_CTX if an error has occurred
 *
 *   parameters:
 *       SMOPS_CTX *ctx: a pointer to the SMOPS_CTX
@@ -67,7 +66,9 @@ void SMOPS_CTX_fill_err_msg(SMOPS_CTX *ctx, char *err_msg)
 */
 void SMOPS_CTX_print_err(SMOPS_CTX *ctx)
 {
-    printf("%s: ERROR! %s\n", LIBNAME, ctx->err_msg);
+    if(ctx->err == 1) {
+        printf("%s: ERROR! %s\n", LIBNAME, ctx->err_msg);
+    }
 }
 
 /** Sets the number of threads to be used for calculations.
@@ -82,7 +83,7 @@ void SMOPS_CTX_print_err(SMOPS_CTX *ctx)
 */
 int SMOPS_CTX_set_thread_num(SMOPS_CTX *ctx, int thread_num)
 {
-    if(thread <= 0) {
+    if(thread_num <= 0) {
         SMOPS_CTX_fill_err_msg(ctx, "thread_num is invalid (thread_num <= 0)");
         return 0;
     }
@@ -98,7 +99,10 @@ int SMOPS_CTX_set_thread_num(SMOPS_CTX *ctx, int thread_num)
 *   returns:
 *       the number of threads to be used
 */
-int SMOPS_CTX_get_thread_num(SMOPS_CTX *ctx) return ctx->thread_num;
+int SMOPS_CTX_get_thread_num(SMOPS_CTX *ctx)
+{
+    return ctx->thread_num;
+}
 
 /** Set if results should be logged to file
 *
@@ -127,4 +131,7 @@ int SMOPS_CTX_set_log(SMOPS_CTX *ctx, int log)
 *   returns:
 *       1 if the program should save results to file, 0 if not
 */
-int SMOPS_CTX_get_log(SMOPS_CTX *ctx) return ctx->log;
+int SMOPS_CTX_get_log(SMOPS_CTX *ctx)
+{
+    return ctx->log;
+}

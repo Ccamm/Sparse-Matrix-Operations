@@ -1,7 +1,7 @@
-#define LIBNAME             "SMOPS"
-#define DEFAULT_THREAD_NUM  4
-#define DEFAULT_LOG         0
-#define ERR_MSG_BUFFER      100
+#define LIBNAME "SMOPS"
+#define DEFAULT_THREAD_NUM 4
+#define DEFAULT_LOG 0
+#define ERR_MSG_BUFFER 100
 
 enum OPERATIONS {
     NO_OP,
@@ -33,5 +33,6 @@ extern void SMOPS_CTX_free(SMOPS_CTX *);
 extern void SMOPS_CTX_fill_err_msg(SMOPS_CTX *, char *);
 extern void SMOPS_CTX_print_err(SMOPS_CTX *);
 extern int SMOPS_CTX_set_thread_num(SMOPS_CTX *, int);
+extern int SMOPS_CTX_get_thread_num(SMOPS_CTX *);
 extern int SMOPS_CTX_set_log(SMOPS_CTX *, int);
 extern int SMOPS_CTX_get_log(SMOPS_CTX *);

@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "smopslib.h"
+#include "lib/smopslib.h"
 
 #define OPTLIST "t:lf:"
 
@@ -32,7 +32,7 @@ void usage(char *progam_name)
     printf("\toptional file: file name of the other input matrix for ad and mm\n");
 }
 
-int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames int *op_flag, int argc, char **argv)
+int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, int *op_flag, float *sm_arg, int argc, char **argv)
 {
     int opt, index;
     int op_flag_temp = NO_OP;
@@ -49,34 +49,31 @@ int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames int *op_flag, int argc, char
         switch (opt) {
             case 't':
                 if(SMOPS_CTX_set_thread_num(ctx, atoi(optarg)) == 0) {
-                    SMOPS_CTX_print_err(ctx);
-                    usage(argv[0]);
-                    exit(EXIT_FAILURE);
+                    return 0;
                 }
                 break;
             case 'l':
                 SMOPS_CTX_set_log(ctx, 1);
                 break;
             case 'f':
+                filenames->file_name1 = optarg;
                 index = optind;
-                if(index >= argc || argv[index] == '-') {
-                    fprintf("%s: no file name specified after -f option");
-                    usage(argv[0]);
-                    exit(EXIT_FAILURE);
-                }
-                filenames->file_name1 = argv[index];
-                index++;
-                if(index < argc && argv[index] != '-') {
+                if(index < argc && *argv[index] != '-') {
                     filenames->file_name2 = argv[index];
                 }
                 break;
+            case 0:
+                switch (op_flag_temp) {
+                    case SCALAR_MULT:
+                        *sm_arg = atof(optarg);
+                        break;
+                }
         }
     }
 
     if (op_flag_temp == NO_OP) {
-        fprintf(stderr, "%s: no matrix operation provided\n", argv[0]);
-        usage(argv[0]);
-        exit(EXIT_FAILURE);
+        SMOPS_CTX_fill_err_msg(ctx, "no matrix operation provided");
+        return 0;
     }
 
     *op_flag = op_flag_temp;
@@ -86,14 +83,53 @@ int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames int *op_flag, int argc, char
 int main(int argc, char **argv)
 {
     int op_flag;
+    float sm_arg;
     SMOPS_CTX *ctx = SMOPS_CTX_new();
     FILENAMES filenames;
 
-    if(parse_opts(ctx, &op_flag, argc, argv) == 0) {
+    if(parse_opts(ctx, &filenames, &op_flag, &sm_arg, argc, argv) == 0) {
         SMOPS_CTX_print_err(ctx);
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
-    
+
+    if(filenames.file_name1 == NULL) {
+        SMOPS_CTX_fill_err_msg(ctx, "no file provided as input");
+        SMOPS_CTX_print_err(ctx);
+        usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("File name: %s\n", filenames.file_name1);
+
+    switch(op_flag) {
+        case SCALAR_MULT:
+            printf("Scalar Mult\n");
+            break;
+        case TRACE:
+            printf("Trace\n");
+            break;
+        case ADD:
+            if(filenames.file_name2 == NULL) {
+                SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
+                SMOPS_CTX_print_err(ctx);
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            printf("Add\n");
+            break;
+        case TRANSPOSE:
+            printf("Transpose\n");
+            break;
+        case MATRIX_MULT:
+            if(filenames.file_name2 == NULL) {
+                SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
+                SMOPS_CTX_print_err(ctx);
+                exit(EXIT_FAILURE);
+            }
+            printf("Matrix Mult\n");
+            break;
+    }
+
     exit(EXIT_SUCCESS);
 }

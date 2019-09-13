@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "smopslib.h"
+#include "smops.h"
 
 /** Creates a new SMOPS_CTX for storing data for the library.
 *
@@ -26,6 +26,8 @@ SMOPS_CTX *SMOPS_CTX_new()
     ctx->thread_num = DEFAULT_THREAD_NUM;
     ctx->log = DEFAULT_LOG;
     ctx->err = 0;
+    ctx->operation = NO_OP;
+    ctx->log_prefix = NULL;
     return ctx;
 }
 
@@ -134,4 +136,50 @@ int SMOPS_CTX_set_log(SMOPS_CTX *ctx, int log)
 int SMOPS_CTX_get_log(SMOPS_CTX *ctx)
 {
     return ctx->log;
+}
+
+/** Sets the operation that will be performed
+*
+*   parameters:
+*       SMOPS_CTX *ctx: a pointer to the SMOPS_CTX
+*       OPERATION op: the operation that will be performed
+*/
+void SMOPS_CTX_set_operation(SMOPS_CTX *ctx, OPERATION op)
+{
+    ctx->operation = op;
+}
+
+/** Gets the operation that will be performed
+*
+*   parameters:
+*       SMOPS_CTX *ctx: a pointer to the SMOPS_CTX
+*
+*   return:
+*       the OPERATION that will be performed
+*/
+OPERATION SMOPS_CTX_get_operation(SMOPS_CTX *ctx)
+{
+    return ctx->operation;
+}
+
+/** Sets the prefix of the log filename
+*
+*   parameters:
+*       SMOPS_CTX *ctx: a pointer to the SMOPS_CTX
+*       char *prefix: the prefix of the log filename
+*
+*   return:
+*       1 if successfully executed, 0 otherwise filling the err_msg
+*/
+int SMOPS_CTX_set_log_name_prefix(SMOPS_CTX *ctx, char *prefix)
+{
+    int prefix_len = strlen(prefix);
+    ctx->log_prefix = (char *)malloc(sizeof(char)*(prefix_len+1));
+    if(ctx->log_prefix == NULL) {
+        SMOPS_CTX_fill_err_msg(ctx, "failed to allocate memory for log file name prefix");
+        return 0;
+    }
+    strncpy(ctx->log_prefix, prefix, prefix_len);
+    ctx->log_prefix[prefix_len] = '\0';
+    return 1;
 }

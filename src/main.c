@@ -3,9 +3,10 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "lib/smopslib.h"
+#include "lib/smops.h"
 
 #define OPTLIST "t:lf:"
+#define LOGPREFIX "21955725_\0"
 
 struct filenames {
     char *file_name1;
@@ -32,10 +33,13 @@ void usage(char *progam_name)
     printf("\toptional file: file name of the other input matrix for ad and mm\n");
 }
 
-int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, int *op_flag, float *sm_arg, int argc, char **argv)
+int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, float *sm_arg, int argc, char **argv)
 {
     int opt, index;
     int op_flag_temp = NO_OP;
+    filenames->file_name1 = NULL;
+    filenames->file_name2 = NULL;
+
     struct option long_optlist[] = {
         {"sm", required_argument, &op_flag_temp, SCALAR_MULT},
         {"tr", no_argument, &op_flag_temp, TRACE},
@@ -76,7 +80,7 @@ int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, int *op_flag, float *sm_arg
         return 0;
     }
 
-    *op_flag = op_flag_temp;
+    SMOPS_CTX_set_operation(ctx, (OPERATION) op_flag_temp);
     return 1;
 }
 
@@ -87,7 +91,7 @@ int main(int argc, char **argv)
     SMOPS_CTX *ctx = SMOPS_CTX_new();
     FILENAMES filenames;
 
-    if(parse_opts(ctx, &filenames, &op_flag, &sm_arg, argc, argv) == 0) {
+    if(parse_opts(ctx, &filenames, &sm_arg, argc, argv) == 0) {
         SMOPS_CTX_print_err(ctx);
         usage(argv[0]);
         exit(EXIT_FAILURE);
@@ -100,8 +104,16 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    printf("File name: %s\n", filenames.file_name1);
+    if(SMOPS_CTX_set_log_name_prefix(ctx, LOGPREFIX) == 0) {
+        SMOPS_CTX_print_err(ctx);
+        exit(EXIT_FAILURE);
+    }
 
+    printf("Prefix %s\n", ctx->log_prefix);
+
+    MATRIX *a = MATRIX_init(ctx, filenames.file_name1);
+    printf("Filename: %s\n", a->input_fn);
+    op_flag = (int) SMOPS_CTX_get_operation(ctx);
     switch(op_flag) {
         case SCALAR_MULT:
             printf("Scalar Mult\n");
@@ -131,5 +143,6 @@ int main(int argc, char **argv)
             break;
     }
 
+    SMOPS_CTX_free(ctx);
     exit(EXIT_SUCCESS);
 }

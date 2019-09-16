@@ -48,7 +48,7 @@ extern OPERATION SMOPS_CTX_get_operation(SMOPS_CTX *);
 extern int SMOPS_CTX_set_log_name_prefix(SMOPS_CTX *, char *);
 
 enum mtype { INT, FLOAT, UNDEFINED };
-typedef enum mtype MATRIX_TYPE;
+typedef enum mtype TYPE;
 
 enum mf { NONE=0, COO=1, CSR=2, CSC=3};
 typedef enum mf MATRIX_FORMAT;
@@ -81,9 +81,8 @@ struct csc {
 typedef struct csr CSC_DATA;
 
 struct m {
-    char *input_fn;
     MATRIX_FORMAT format;
-    MATRIX_TYPE type;
+    TYPE type;
     COO_DATA *coo_data;
     CSR_DATA *csr_data;
     CSC_DATA *csc_data;
@@ -94,7 +93,6 @@ struct m {
 };
 typedef struct m MATRIX;
 
-extern MATRIX *MATRIX_init(SMOPS_CTX *, char *);
 extern MATRIX *MATRIX_new(SMOPS_CTX *);
 extern int MATRIX_change_format(SMOPS_CTX *, MATRIX *, MATRIX_FORMAT);
 extern int MATRIX_set_format(SMOPS_CTX *, MATRIX *, MATRIX_FORMAT);

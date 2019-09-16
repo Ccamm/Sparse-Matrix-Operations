@@ -111,8 +111,7 @@ int main(int argc, char **argv)
 
     printf("Prefix %s\n", ctx->log_prefix);
 
-    MATRIX *a = MATRIX_init(ctx, filenames.file_name1);
-    printf("Filename: %s\n", a->input_fn);
+    //MATRIX *a = MATRIX_new(ctx);
     op_flag = (int) SMOPS_CTX_get_operation(ctx);
     switch(op_flag) {
         case SCALAR_MULT:

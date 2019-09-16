@@ -61,7 +61,6 @@ void MATRIX_free_data(MATRIX *matrix)
 */
 void MATRIX_free(MATRIX *matrix)
 {
-    if(matrix->input_fn != NULL) free(matrix->input_fn);
     MATRIX_free_data(matrix);
     free(matrix);
 }
@@ -155,34 +154,5 @@ MATRIX *MATRIX_new(SMOPS_CTX *ctx)
     }
 
     matrix->type = UNDEFINED;
-    matrix->input_fn = NULL;
-    return matrix;
-}
-
-/** Creates a Matrix for storing the data of a Sparse Matrix with a file as input
-*
-*   parameters:
-*       SMOPS_CTX *ctx: a pointer to the SMOPS_CTX
-*       char *filename: the name of the input file for the matrix
-*
-*   return:
-*       return an empty MATRIX with some values initialized by the SMOPS_CTX
-*       returns NULL if an error has occurred and fills err_msg in SMOPS_CTX
-*/
-MATRIX *MATRIX_init(SMOPS_CTX *ctx, char *filename)
-{
-    MATRIX *matrix = MATRIX_new(ctx);
-    if(matrix == NULL) {return NULL;}
-
-    int filename_len = strlen(filename);
-    matrix->input_fn = (char *)malloc(sizeof(char)*(filename_len + 1));
-    if(matrix->input_fn == NULL) {
-        SMOPS_CTX_fill_err_msg(ctx, "failed to allocate memory for matrix file input");
-        MATRIX_free(matrix);
-        return NULL;
-    }
-    strncpy(matrix->input_fn, filename, filename_len);
-    matrix->input_fn[filename_len] = '\0';
-
     return matrix;
 }

@@ -55,16 +55,27 @@ TYPE get_type(SMOPS_CTX *ctx, MATRIX *matrix, char *str) {
 void convert_coo(MATRIX_DATA *nnz, int *ia, int *ja, MATRIX_DATA *values,
     int *array_a, int *array_b, int non_zero_size, int n, int thread_num)
 {
-    #pragma omp parallel num_threads(thread_num)
-    {
-        int i;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            nnz[i] = values[i];
-            ja[i] = array_b[i];
-            #pragma omp atomic
-            ia[array_a[i] + 1] += 1;
-        }
+    int i;
+    switch(thread_num) {
+        case 1:
+            for(i = 0; i < non_zero_size; i++) {
+                nnz[i] = values[i];
+                ja[i] = array_b[i];
+                ia[array_a[i] + 1] += 1;
+            }
+            break;
+        default:
+            #pragma omp parallel num_threads(thread_num) private(i)
+            {
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    nnz[i] = values[i];
+                    ja[i] = array_b[i];
+                    #pragma omp atomic
+                    ia[array_a[i] + 1] += 1;
+                }
+            }
+            break;
     }
 
     for(int i = 1; i < n + 1; i++)
@@ -182,29 +193,50 @@ int float_parse_data_str_to_coo(SMOPS_CTX *ctx, MATRIX *matrix, char *data_str)
         return 0;
     }
     COO_DATA *coo_data = matrix->coo_data;
-    #pragma omp parallel num_threads(ctx->thread_num)
-    {
-        #pragma omp single
-        {
-            int index = 0;
-            double elem;
-            char *ptr;
-            char *elem_str = strtok_r(data_str, " ", &ptr);
+
+    int index;
+    double elem;
+    char *ptr;
+    char *elem_str;
+    switch(ctx->thread_num) {
+        case 1:
+            index = 0;
+            elem_str = strtok_r(data_str, " ", &ptr);
             do {
                 elem = atof(elem_str);
 
-                #pragma omp task firstprivate(index, elem)
-                {
-                    if(elem != 0) {
-                        dense_matrix[index].f = elem;
-                        #pragma omp atomic
-                        non_zero_size++;
-                    }
+                if(elem != 0) {
+                    dense_matrix[index].f = elem;
+                    non_zero_size++;
                 }
                 index++;
             } while((elem_str = strtok_r(NULL, " ", &ptr)) != NULL);
-        }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num)
+            {
+                #pragma omp single
+                {
+                    index = 0;
+                    elem_str = strtok_r(data_str, " ", &ptr);
+                    do {
+                        elem = atof(elem_str);
+
+                        #pragma omp task firstprivate(index, elem)
+                        {
+                            if(elem != 0) {
+                                dense_matrix[index].f = elem;
+                                #pragma omp atomic
+                                non_zero_size++;
+                            }
+                        }
+                        index++;
+                    } while((elem_str = strtok_r(NULL, " ", &ptr)) != NULL);
+                }
+            }
+            break;
     }
+
     matrix->non_zero_size = non_zero_size;
 
     coo_data->coords_i = (int *)malloc(sizeof(int)*non_zero_size);
@@ -223,8 +255,7 @@ int float_parse_data_str_to_coo(SMOPS_CTX *ctx, MATRIX *matrix, char *data_str)
         return 0;
     }
 
-    int index = 0;
-    double elem;
+    index = 0;
     for (int i = 0; i < size; i++) {
         elem = dense_matrix[i].f;
         if(elem != 0) {
@@ -260,29 +291,49 @@ int int_parse_data_str_to_coo(SMOPS_CTX *ctx, MATRIX *matrix, char *data_str)
         return 0;
     }
     COO_DATA *coo_data = matrix->coo_data;
-    #pragma omp parallel num_threads(ctx->thread_num)
-    {
-        #pragma omp single
-        {
-            int index = 0;
-            int elem;
-            char *ptr;
-            char *elem_str = strtok_r(data_str, " ", &ptr);
+
+    int index, elem;
+    char *ptr;
+    char *elem_str;
+    switch(ctx->thread_num) {
+        case 1:
+            index = 0;
+            elem_str = strtok_r(data_str, " ", &ptr);
             do {
                 elem = atoi(elem_str);
 
-                #pragma omp task firstprivate(index, elem)
-                {
-                    if(elem != 0) {
-                        dense_matrix[index].i = elem;
-                        #pragma omp atomic
-                        non_zero_size++;
-                    }
+                if(elem != 0) {
+                    dense_matrix[index].i = elem;
+                    non_zero_size++;
                 }
                 index++;
             } while((elem_str = strtok_r(NULL, " ", &ptr)) != NULL);
-        }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num)
+            {
+                #pragma omp single
+                {
+                    index = 0;
+                    elem_str = strtok_r(data_str, " ", &ptr);
+                    do {
+                        elem = atoi(elem_str);
+
+                        #pragma omp task firstprivate(index, elem)
+                        {
+                            if(elem != 0) {
+                                dense_matrix[index].i = elem;
+                                #pragma omp atomic
+                                non_zero_size++;
+                            }
+                        }
+                        index++;
+                    } while((elem_str = strtok_r(NULL, " ", &ptr)) != NULL);
+                }
+            }
+            break;
     }
+
     matrix->non_zero_size = non_zero_size;
 
     coo_data->coords_i = (int *)malloc(sizeof(int)*non_zero_size);
@@ -301,8 +352,7 @@ int int_parse_data_str_to_coo(SMOPS_CTX *ctx, MATRIX *matrix, char *data_str)
         return 0;
     }
 
-    int index = 0;
-    int elem;
+    index = 0;
     for (int i = 0; i < size; i++) {
         elem = dense_matrix[i].i;
         if(elem != 0) {

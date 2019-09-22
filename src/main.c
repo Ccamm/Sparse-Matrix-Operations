@@ -26,7 +26,7 @@ void usage(char *progam_name)
     printf("\t--ts: Calculate the Transpose of the input matrix\n");
     printf("\t--mm: Multiply two matrices specified by the -f option\n\n");
     printf("options:\n");
-    printf("\t-t [number of threads]: How many threads should be used\n");
+    printf("\t-t [number of threads]: How many threads should be used, runs sequentially if 1\n");
     printf("\t-l: Results will be logged to file\n\n");
     printf("matrix input: -f [file] [optional file]\n");
     printf("\tfile: file name of the input matrix\n");
@@ -139,7 +139,6 @@ int main(int argc, char **argv)
 
     switch(SMOPS_CTX_get_operation(ctx)) {
         case SCALAR_MULT:
-            printf("Scalar Mult\n");
             if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
                 smops_exit(ctx, a, b, result);
                 exit(EXIT_FAILURE);
@@ -147,7 +146,6 @@ int main(int argc, char **argv)
             MATRIX_OP_scalar_multiplication(ctx, result, a, sm_arg);
             break;
         case TRACE:
-            printf("Trace\n");
             if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
                 smops_exit(ctx, a, b, result);
                 exit(EXIT_FAILURE);
@@ -167,7 +165,6 @@ int main(int argc, char **argv)
                 exit(EXIT_FAILURE);
             }
 
-            printf("Add\n");
             if(MATRIX_preload_type(ctx, a, filenames.file_name1, b, filenames.file_name2) == 0) {
                 smops_exit(ctx, a, b, result);
                 exit(EXIT_FAILURE);
@@ -183,7 +180,6 @@ int main(int argc, char **argv)
             MATRIX_OP_addition(ctx, a, b);
             break;
         case TRANSPOSE:
-            printf("Transpose\n");
             if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
                 smops_exit(ctx, a, b, result);
                 exit(EXIT_FAILURE);
@@ -191,7 +187,6 @@ int main(int argc, char **argv)
             MATRIX_OP_transpose(ctx, result, a);
             break;
         case MATRIX_MULT:
-            printf("Matrix Mult\n");
             if(filenames.file_name2 == NULL) {
                 SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
                 smops_exit(ctx, a, b, result);

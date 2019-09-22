@@ -31,15 +31,26 @@ int MATRIX_OP_transpose(SMOPS_CTX *ctx, MATRIX *result, MATRIX *matrix)
         return 0;
     }
 
-    #pragma omp parallel num_threads(ctx->thread_num)
-    {
-        int i;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            result->coo_data->coords_i[i] = matrix->coo_data->coords_j[i];
-            result->coo_data->coords_j[i] = matrix->coo_data->coords_i[i];
-            result->coo_data->values[i] = matrix->coo_data->values[i];
-        }
+    switch(ctx->thread_num) {
+        case 1:
+            for(int i = 0; i < non_zero_size; i++) {
+                result->coo_data->coords_i[i] = matrix->coo_data->coords_j[i];
+                result->coo_data->coords_j[i] = matrix->coo_data->coords_i[i];
+                result->coo_data->values[i] = matrix->coo_data->values[i];
+            }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num)
+            {
+                int i;
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    result->coo_data->coords_i[i] = matrix->coo_data->coords_j[i];
+                    result->coo_data->coords_j[i] = matrix->coo_data->coords_i[i];
+                    result->coo_data->values[i] = matrix->coo_data->values[i];
+                }
+            }
+            break;
     }
     clock_gettime(CLOCK_REALTIME, &end);
     ctx->time_op = (end.tv_sec - start.tv_sec) +

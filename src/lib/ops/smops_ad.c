@@ -6,6 +6,20 @@
 
 #define OP ADD
 
+void sequential_add_to_dense_elem(MATRIX_DATA *dense_matrix, MATRIX_DATA elem, TYPE type, int pos)
+{
+    switch(type) {
+        case FLOAT:
+            dense_matrix[pos].f += elem.f;
+            break;
+        case INT:
+            dense_matrix[pos].i += elem.i;
+            break;
+        default:
+            break;
+    }
+}
+
 /** Adds the element to dense matrix arbitrary to type
 *
 *   paramaters:
@@ -14,7 +28,7 @@
 *       TYPE: the type the data is
 *       int pos: the 1D position of the element being added
 */
-void add_to_dense_elem(MATRIX_DATA *dense_matrix, MATRIX_DATA elem, TYPE type, int pos)
+void parallel_add_to_dense_elem(MATRIX_DATA *dense_matrix, MATRIX_DATA elem, TYPE type, int pos)
 {
     switch(type) {
         case FLOAT:
@@ -27,6 +41,56 @@ void add_to_dense_elem(MATRIX_DATA *dense_matrix, MATRIX_DATA elem, TYPE type, i
             break;
         default:
             break;
+    }
+}
+
+void sequential_addition(MATRIX_DATA *dense_matrix, CSR_DATA *csr_a, CSR_DATA *csr_b,
+                        TYPE type, int rows)
+{
+    int p_a, q_a, p_b, q_b;
+    for(int r = 1; r < rows + 1; r++) {
+        p_a = csr_a->ia[r-1];
+        q_a = csr_a->ia[r];
+        for(int i = p_a; i < q_a; i++) {
+            sequential_add_to_dense_elem(dense_matrix, csr_a->nnz[i], type, (r-1)*rows + csr_a->ja[i]);
+        }
+
+        p_b = csr_b->ia[r-1];
+        q_b = csr_b->ia[r];
+        for(int i = p_b; i < q_b; i++) {
+            sequential_add_to_dense_elem(dense_matrix, csr_b->nnz[i], type, (r-1)*rows + csr_b->ja[i]);
+        }
+    }
+}
+
+void parallel_addition(SMOPS_CTX *ctx, MATRIX_DATA *dense_matrix, CSR_DATA *csr_a,
+                        CSR_DATA *csr_b, TYPE type, int rows)
+{
+    #pragma omp parallel num_threads(ctx->thread_num) firstprivate(type, rows)
+    {
+        #pragma omp single
+        {
+            int p_a, q_a, p_b, q_b;
+            for(int r = 1; r < rows + 1; r++) {
+                #pragma omp task firstprivate(r)
+                {
+                    p_a = csr_a->ia[r-1];
+                    q_a = csr_a->ia[r];
+                    for(int i = p_a; i < q_a; i++) {
+                        parallel_add_to_dense_elem(dense_matrix, csr_a->nnz[i], type, (r-1)*rows + csr_a->ja[i]);
+                    }
+                }
+
+                #pragma omp task firstprivate(r)
+                {
+                    p_b = csr_b->ia[r-1];
+                    q_b = csr_b->ia[r];
+                    for(int i = p_b; i < q_b; i++) {
+                        parallel_add_to_dense_elem(dense_matrix, csr_b->nnz[i], type, (r-1)*rows + csr_b->ja[i]);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -57,32 +121,15 @@ int addition(SMOPS_CTX *ctx, MATRIX *matrix_a, MATRIX *matrix_b)
         return 0;
     }
 
-    #pragma omp parallel num_threads(ctx->thread_num) firstprivate(type, rows)
-    {
-        #pragma omp single
-        {
-            int p_a, q_a, p_b, q_b;
-            for(int r = 1; r < rows + 1; r++) {
-                #pragma omp task firstprivate(r)
-                {
-                    p_a = csr_a->ia[r-1];
-                    q_a = csr_a->ia[r];
-                    for(int i = p_a; i < q_a; i++) {
-                        add_to_dense_elem(dense_matrix, csr_a->nnz[i], type, (r-1)*rows + csr_a->ja[i]);
-                    }
-                }
-
-                #pragma omp task firstprivate(r)
-                {
-                    p_b = csr_b->ia[r-1];
-                    q_b = csr_b->ia[r];
-                    for(int i = p_b; i < q_b; i++) {
-                        add_to_dense_elem(dense_matrix, csr_b->nnz[i], type, (r-1)*rows + csr_b->ja[i]);
-                    }
-                }
-            }
-        }
+    switch(ctx->thread_num) {
+        case 1:
+            sequential_addition(dense_matrix, csr_a, csr_b, type, rows);
+            break;
+        default:
+            parallel_addition(ctx, dense_matrix, csr_a, csr_b, type, rows);
+            break;
     }
+
     SMOPS_RESULT_save_matrix_result(ctx, dense_matrix, type, rows, matrix_a->cols);
     return 1;
 }
@@ -117,7 +164,7 @@ int MATRIX_OP_addition(SMOPS_CTX *ctx, MATRIX *matrix_a, MATRIX *matrix_b)
     }
 
     if(addition(ctx, matrix_a, matrix_b) == 0) {return 0;}
-    
+
     clock_gettime(CLOCK_REALTIME, &end);
     ctx->time_op = (end.tv_sec - start.tv_sec) +
                         (end.tv_nsec - start.tv_nsec)/ BILLION;

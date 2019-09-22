@@ -15,14 +15,24 @@ MATRIX_DATA *COO_to_dense(SMOPS_CTX *ctx, COO_DATA *coo_data, int rows, int cols
         return NULL;
     }
 
-    #pragma omp parallel num_threads(ctx->thread_num)
-    {
-        int i, index;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            index = coo_data->coords_i[i]*rows + coo_data->coords_j[i];
-            dense_matrix[index] = coo_data->values[i];
-        }
+    int i, index;
+    switch(ctx->thread_num) {
+        case 1:
+            for(i = 0; i < non_zero_size; i++) {
+                index = coo_data->coords_i[i]*rows + coo_data->coords_j[i];
+                dense_matrix[index] = coo_data->values[i];
+            }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num) private(i, index)
+            {
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    index = coo_data->coords_i[i]*rows + coo_data->coords_j[i];
+                    dense_matrix[index] = coo_data->values[i];
+                }
+            }
+            break;
     }
     return dense_matrix;
 }

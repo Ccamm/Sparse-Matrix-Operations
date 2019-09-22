@@ -35,15 +35,26 @@ int MATRIX_OP_scalar_multiplication(SMOPS_CTX *ctx, MATRIX *result, MATRIX *matr
         return 0;
     }
 
-    #pragma omp parallel num_threads(ctx->thread_num)
-    {
-        int i;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            result->coo_data->coords_i[i] = matrix->coo_data->coords_i[i];
-            result->coo_data->coords_j[i] = matrix->coo_data->coords_j[i];
-            result->coo_data->values[i].f = matrix->coo_data->values[i].f*sm;
-        }
+    switch(ctx->thread_num) {
+        case 1:
+            for(int i = 0; i < non_zero_size; i++) {
+                result->coo_data->coords_i[i] = matrix->coo_data->coords_i[i];
+                result->coo_data->coords_j[i] = matrix->coo_data->coords_j[i];
+                result->coo_data->values[i].f = matrix->coo_data->values[i].f*sm;
+            }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num)
+            {
+                int i;
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    result->coo_data->coords_i[i] = matrix->coo_data->coords_i[i];
+                    result->coo_data->coords_j[i] = matrix->coo_data->coords_j[i];
+                    result->coo_data->values[i].f = matrix->coo_data->values[i].f*sm;
+                }
+            }
+            break;
     }
 
     clock_gettime(CLOCK_REALTIME, &end);

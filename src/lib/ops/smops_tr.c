@@ -39,15 +39,26 @@ int float_trace(SMOPS_CTX *ctx, MATRIX_DATA *result, MATRIX *matrix)
         SMOPS_CTX_fill_err_msg(ctx, "COO DATA improperly set for trace");
         return 0;
     }
-    #pragma omp parallel num_threads(ctx->thread_num) reduction(+ : trace)
-    {
-        int i;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            if(coords_i[i] == coords_j[i]) {
-                trace += values[i].f;
+    switch(ctx->thread_num) {
+        case 1:
+            for(int i = 0; i < non_zero_size; i++) {
+                if(coords_i[i] == coords_j[i]) {
+                    trace += values[i].f;
+                }
             }
-        }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num) reduction(+ : trace)
+            {
+                int i;
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    if(coords_i[i] == coords_j[i]) {
+                        trace += values[i].f;
+                    }
+                }
+            }
+            break;
     }
     result[0].f = trace;
     return 1;
@@ -86,15 +97,26 @@ int int_trace(SMOPS_CTX *ctx, MATRIX_DATA *result, MATRIX *matrix)
         SMOPS_CTX_fill_err_msg(ctx, "COO DATA improperly set for trace");
         return 0;
     }
-    #pragma omp parallel num_threads(ctx->thread_num) reduction(+ : trace)
-    {
-        int i;
-        #pragma omp for
-        for(i = 0; i < non_zero_size; i++) {
-            if(coords_i[i] == coords_j[i]) {
-                trace += values[i].i;
+    switch(ctx->thread_num) {
+        case 1:
+            for(int i = 0; i < non_zero_size; i++) {
+                if(coords_i[i] == coords_j[i]) {
+                    trace += values[i].i;
+                }
             }
-        }
+            break;
+        default:
+            #pragma omp parallel num_threads(ctx->thread_num) reduction(+ : trace)
+            {
+                int i;
+                #pragma omp for
+                for(i = 0; i < non_zero_size; i++) {
+                    if(coords_i[i] == coords_j[i]) {
+                        trace += values[i].i;
+                    }
+                }
+            }
+            break;
     }
     result[0].i = trace;
     return 1;

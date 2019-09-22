@@ -1,14 +1,14 @@
 #!/bin/sh
 FILE_DIR="../../../input_files"
 
-INPUT_FILES="$FILE_DIR/int64.in
-$FILE_DIR/int128.in
-$FILE_DIR/int256.in
-$FILE_DIR/int1024.in
-$FILE_DIR/float64.in
-$FILE_DIR/float128.in
-$FILE_DIR/float256.in
-$FILE_DIR/float1024.in"
+INPUT_FILES="int64.in
+int128.in
+int256.in
+int1024.in
+float64.in
+float128.in
+float256.in
+float1024.in"
 
 OP_LIST="ad
 mm
@@ -32,9 +32,10 @@ do
 	cd $op
 	for f in $INPUT_FILES
 	do
-		for test_num in {1..$TEST_NUM}
+		for i in {1..5};
 		do
-			$CMD --$op -t 4 -f $f $f | tail -2 >> $f_$test_num.out
+			echo "Thread: OP: $op TEST: $i"
+			$CMD --$op -t 4 -f $FILE_DIR/$f $FILE_DIR/$f | tail -2 >> $f.out
 		done
 	done
 	cd ..
@@ -49,9 +50,10 @@ do
 	cd $op
 	for f in $INPUT_FILES
 	do
-		for test_num in {1..$TEST_NUM}
+		for i in {1..5};
 		do
-			$CMD --$op -t 1 -f $f $f | tail -2 >> $f_$test_num.out
+			echo "Sequential: OP: $op TEST: $i"
+			$CMD --$op -t 1 -f $FILE_DIR/$f $FILE_DIR/$f | tail -2 >> $f.out
 		done
 	done
 	cd ..

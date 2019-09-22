@@ -33,7 +33,7 @@ void usage(char *progam_name)
     printf("\toptional file: file name of the other input matrix for ad and mm\n");
 }
 
-int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, float *sm_arg, int argc, char **argv)
+int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, double *sm_arg, int argc, char **argv)
 {
     int opt, index;
     int op_flag_temp = NO_OP;
@@ -84,64 +84,149 @@ int parse_opts(SMOPS_CTX *ctx, FILENAMES *filenames, float *sm_arg, int argc, ch
     return 1;
 }
 
+void smops_exit(SMOPS_CTX *ctx, MATRIX *a, MATRIX *b, MATRIX *c)
+{
+    if(ctx != NULL) {
+        SMOPS_CTX_print_err(ctx);
+        SMOPS_CTX_free(ctx);
+    }
+    if(a != NULL) MATRIX_free(a);
+    if(b != NULL) MATRIX_free(b);
+    if(c != NULL) MATRIX_free(c);;
+}
+
 int main(int argc, char **argv)
 {
-    int op_flag;
-    float sm_arg;
+    double sm_arg;
     SMOPS_CTX *ctx = SMOPS_CTX_new();
+    if(ctx == NULL) {
+        fprintf(stderr, "Could not make SMOPS_CTX for controlling operation\n");
+        exit(EXIT_FAILURE);
+    }
     FILENAMES filenames;
 
     if(parse_opts(ctx, &filenames, &sm_arg, argc, argv) == 0) {
-        SMOPS_CTX_print_err(ctx);
+        smops_exit(ctx, NULL, NULL, NULL);
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     if(filenames.file_name1 == NULL) {
         SMOPS_CTX_fill_err_msg(ctx, "no file provided as input");
-        SMOPS_CTX_print_err(ctx);
+        smops_exit(ctx, NULL, NULL, NULL);
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     if(SMOPS_CTX_set_log_name_prefix(ctx, LOGPREFIX) == 0) {
-        SMOPS_CTX_print_err(ctx);
+        smops_exit(ctx, NULL, NULL, NULL);
         exit(EXIT_FAILURE);
     }
 
-    printf("Prefix %s\n", ctx->log_prefix);
+    MATRIX *a = MATRIX_new(ctx);
+    if(a == NULL) {
+        smops_exit(ctx, NULL, NULL, NULL);
+        exit(EXIT_FAILURE);
+    }
 
-    //MATRIX *a = MATRIX_new(ctx);
-    op_flag = (int) SMOPS_CTX_get_operation(ctx);
-    switch(op_flag) {
+    MATRIX *b = NULL;
+
+    MATRIX *result = MATRIX_new(ctx);
+    if(result == NULL) {
+        smops_exit(ctx, a, b, result);
+        exit(EXIT_FAILURE);
+    }
+
+    switch(SMOPS_CTX_get_operation(ctx)) {
         case SCALAR_MULT:
             printf("Scalar Mult\n");
+            if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            MATRIX_OP_scalar_multiplication(ctx, result, a, sm_arg);
             break;
         case TRACE:
             printf("Trace\n");
+            if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            MATRIX_DATA result_num;
+            MATRIX_OP_trace(ctx, &result_num, a);
             break;
         case ADD:
             if(filenames.file_name2 == NULL) {
                 SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
-                SMOPS_CTX_print_err(ctx);
+                smops_exit(ctx, a, b, result);
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
             }
+            if((b = MATRIX_new(ctx)) == NULL){
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+
             printf("Add\n");
+            if(MATRIX_preload_type(ctx, a, filenames.file_name1, b, filenames.file_name2) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            if(MATRIX_load(ctx, b, filenames.file_name2) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            MATRIX_OP_addition(ctx, a, b);
             break;
         case TRANSPOSE:
             printf("Transpose\n");
-            break;
-        case MATRIX_MULT:
-            if(filenames.file_name2 == NULL) {
-                SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
-                SMOPS_CTX_print_err(ctx);
+            if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
+                smops_exit(ctx, a, b, result);
                 exit(EXIT_FAILURE);
             }
+            MATRIX_OP_transpose(ctx, result, a);
+            break;
+        case MATRIX_MULT:
             printf("Matrix Mult\n");
+            if(filenames.file_name2 == NULL) {
+                SMOPS_CTX_fill_err_msg(ctx, "no second file provided as input");
+                smops_exit(ctx, a, b, result);
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            if((b = MATRIX_new(ctx)) == NULL){
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+
+            if(MATRIX_preload_type(ctx, a, filenames.file_name1, b, filenames.file_name2) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+
+            if(MATRIX_change_format(ctx, b, CSC) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            if(MATRIX_load(ctx, b, filenames.file_name2) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+
+            if(MATRIX_load(ctx, a, filenames.file_name1) == 0) {
+                smops_exit(ctx, a, b, result);
+                exit(EXIT_FAILURE);
+            }
+            MATRIX_OP_multiplication(ctx, a, b);
+            break;
+        default:
             break;
     }
-
-    SMOPS_CTX_free(ctx);
+    SMOPS_RESULT_present(ctx, filenames.file_name1, filenames.file_name2);
+    smops_exit(ctx, a, b, result);
     exit(EXIT_SUCCESS);
 }

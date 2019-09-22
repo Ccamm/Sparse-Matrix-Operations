@@ -1,46 +1,5 @@
 #include <stdlib.h>
-#include <string.h>
-
 #include "smops.h"
-
-/** Frees the COO_DATA associated with the matrix
-*
-*   parameters:
-*       COO_DATA *coo_data: a pointer to the COO_DATA to be freed
-*/
-void COO_free(COO_DATA *coo_data)
-{
-    if(coo_data->coords_i != NULL) free(coo_data->coords_i);
-    if(coo_data->coords_j != NULL) free(coo_data->coords_j);
-    if(coo_data->values != NULL) free(coo_data->values);
-    free(coo_data);
-}
-
-/** Frees the CSR_DATA associated with the matrix
-*
-*   parameters:
-*       CSR_DATA *csr_data: a pointer to the CSR_DATA to be freed
-*/
-void CSR_free(CSR_DATA *csr_data)
-{
-    if(csr_data->nnz != NULL) free(csr_data->nnz);
-    if(csr_data->ia != NULL) free(csr_data->ia);
-    if(csr_data->ja != NULL) free(csr_data->ja);
-    free(csr_data);
-}
-
-/** Frees the CSC_DATA associated with the matrix
-*
-*   parameters:
-*       CSC_DATA *csc_data: a pointer to the CSC_DATA to be freed
-*/
-void CSC_free(CSC_DATA *csc_data)
-{
-    if(csc_data->nnz != NULL) free(csc_data->nnz);
-    if(csc_data->ia != NULL) free(csc_data->ia);
-    if(csc_data->ja != NULL) free(csc_data->ja);
-    free(csc_data);
-}
 
 /** Frees the data associated to the matrix
 *
@@ -83,27 +42,19 @@ int MATRIX_set_format(SMOPS_CTX *ctx, MATRIX *matrix, MATRIX_FORMAT format)
     matrix->csr_data = NULL;
     matrix->csc_data = NULL;
 
+    matrix->coo_data = COO_new(ctx);
+    if(matrix->coo_data == NULL) {return 0;}
+
     switch(matrix->format){
         case CSR:
-            matrix->csr_data = (CSR_DATA *)malloc(sizeof(CSR_DATA));
-            if(matrix->csr_data == NULL) {
-                SMOPS_CTX_fill_err_msg(ctx, "failed to allocate memory for csr data for matrix");
-                return 0;
-            }
+            matrix->csr_data = CSR_new(ctx);
+            if(matrix->csr_data == NULL) {return 0;}
             break;
         case COO:
-            matrix->coo_data = (COO_DATA *)malloc(sizeof(COO_DATA));
-            if(matrix->coo_data == NULL) {
-                SMOPS_CTX_fill_err_msg(ctx, "failed to allocate memory for coo data for matrix");
-                return 0;
-            }
             break;
         case CSC:
-            matrix->csc_data = (CSC_DATA *)malloc(sizeof(CSC_DATA));
-            if(matrix->csc_data == NULL) {
-                SMOPS_CTX_fill_err_msg(ctx, "failed to allocate memory for csc data for matrix");
-                return 0;
-            }
+            matrix->csc_data = CSC_new(ctx);
+            if(matrix->csc_data == NULL) {return 0;}
             break;
         default:
             SMOPS_CTX_fill_err_msg(ctx, "failed to get required format for matrix");
@@ -128,6 +79,35 @@ int MATRIX_change_format(SMOPS_CTX *ctx, MATRIX *matrix, MATRIX_FORMAT format_ne
     return MATRIX_set_format(ctx, matrix, format_new);
 }
 
+/** Changes the properties of a MATRIX
+*
+*   parameters:
+*       SMOPS_CTX *ctx: the SMOPS_CTX for handling errors
+*       MATRIX *matrix: the matrix which its properties will be changed
+*       MATRIX_FORMAT format: the new format for the matrix
+*       TYPE type: the new type for the matrix
+*       int rows: the new number of rows for the matrix
+*       int cols: the new number of cols for the matrix
+*       int non_zero_size: the number of non zero elements to be set for matrix
+*
+*   return:
+*       1 if successfully executed, 0 otherwise filling error message
+*/
+int MATRIX_set_properties(SMOPS_CTX *ctx, MATRIX *matrix, MATRIX_FORMAT format,
+                            TYPE type, int rows, int cols, int non_zero_size)
+{
+    if(matrix == NULL) {
+        SMOPS_CTX_fill_err_msg(ctx, "a null matrix was used a parameter for MATRIX_set_properties");
+        return 0;
+    }
+    matrix->type = type;
+    matrix->rows = rows;
+    matrix->cols = cols;
+    matrix->size = rows*cols;
+    matrix->non_zero_size = non_zero_size;
+    return MATRIX_change_format(ctx, matrix, format);
+}
+
 /** Creates a Matrix for storing the data of a Sparse Matrix
 *
 *   parameters:
@@ -145,7 +125,7 @@ MATRIX *MATRIX_new(SMOPS_CTX *ctx)
         return NULL;
     }
 
-    MATRIX_FORMAT OPERATION_FORMATS[] = { NONE, CSR, COO, CSR, COO, CSR };
+    MATRIX_FORMAT OPERATION_FORMATS[] = OP_MAP_FORMAT;
     if(MATRIX_set_format(ctx,
             matrix,
             (MATRIX_FORMAT) OPERATION_FORMATS[ctx->operation]) == 0){

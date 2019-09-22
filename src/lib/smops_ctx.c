@@ -28,6 +28,9 @@ SMOPS_CTX *SMOPS_CTX_new()
     ctx->err = 0;
     ctx->operation = NO_OP;
     ctx->log_prefix = NULL;
+    ctx->time_load = 0;
+    ctx->time_op = 0;
+    ctx->result = NULL;
     return ctx;
 }
 
@@ -39,6 +42,8 @@ SMOPS_CTX *SMOPS_CTX_new()
 void SMOPS_CTX_free(SMOPS_CTX *ctx)
 {
     if(ctx->err_msg != NULL) free(ctx->err_msg);
+    if(ctx->log_prefix != NULL) free(ctx->log_prefix);
+    if(ctx->result != NULL) SMOPS_RESULT_free(ctx->result);
     free(ctx);
 }
 

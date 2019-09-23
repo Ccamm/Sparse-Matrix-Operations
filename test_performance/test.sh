@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 FILE_DIR="../../../input_files"
 
 INPUT_FILES="int64.in
@@ -16,7 +16,7 @@ sm
 tr
 ts"
 
-TEST_NUM=5
+TEST_NUM=10
 
 SEQ_DIR="results/sequential"
 
@@ -32,9 +32,9 @@ do
 	cd $op
 	for f in $INPUT_FILES
 	do
-		for i in {1..5};
+		for i in {1..$TEST_NUM};
 		do
-			echo "Thread: OP: $op TEST: $i"
+			echo "Thread: OP: $op TEST: $i INPUT: $f"
 			$CMD --$op -t 4 -f $FILE_DIR/$f $FILE_DIR/$f | tail -2 >> $f.out
 		done
 	done
@@ -50,12 +50,13 @@ do
 	cd $op
 	for f in $INPUT_FILES
 	do
-		for i in {1..5};
+		for i in {1..$TEST_NUM};
 		do
-			echo "Sequential: OP: $op TEST: $i"
+			echo "Sequential: OP: $op TEST: $i INPUT: $f"
 			$CMD --$op -t 1 -f $FILE_DIR/$f $FILE_DIR/$f | tail -2 >> $f.out
 		done
 	done
 	cd ..
 done
 cd ../..
+python3 graph_result.py

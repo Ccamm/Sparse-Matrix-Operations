@@ -64,6 +64,14 @@ void sequential_multiplication(MATRIX_DATA *dense_matrix, CSR_DATA *csr_a,
 void parallel_multiplication(SMOPS_CTX *ctx, MATRIX_DATA *dense_matrix, CSR_DATA *csr_a,
                             CSC_DATA *csc_b, TYPE type, int rows_result, int cols_result)
 {
+    MATRIX_DATA *a_nnz = csr_a->nnz;
+    int *a_ia = csr_a->ia;
+    int *a_ja = csr_a->ja;
+
+    MATRIX_DATA *b_nnz = csc_b->nnz;
+    int *b_ia = csc_b->ia;
+    int *b_ja = csc_b->ja;
+
     #pragma omp parallel num_threads(ctx->thread_num) firstprivate(type, rows_result, cols_result)
     {
         #pragma omp single
@@ -74,15 +82,15 @@ void parallel_multiplication(SMOPS_CTX *ctx, MATRIX_DATA *dense_matrix, CSR_DATA
                     #pragma omp task firstprivate(r,c)
                     {
                         index = r*rows_result + c;
-                        p_a = csr_a->ia[r];
-                        q_a = csr_a->ia[r+1];
-                        p_b = csc_b->ia[c];
-                        q_b = csc_b->ia[c+1];
+                        p_a = a_ia[r];
+                        q_a = a_ia[r+1];
+                        p_b = b_ia[c];
+                        q_b = b_ia[c+1];
 
                         for(int i = p_a; i < q_a; i++) {
                             for(int j = p_b; j < q_b; j++) {
-                                if(csr_a->ja[i] == csc_b->ja[j]) {
-                                    parallel_mult_to_dense(dense_matrix, csr_a->nnz[i], csc_b->nnz[j], type, index);
+                                if(a_ja[i] == b_ja[j]) {
+                                    parallel_mult_to_dense(dense_matrix, a_nnz[i], b_nnz[j], type, index);
                                     break;
                                 }
                             }

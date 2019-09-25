@@ -54,6 +54,7 @@ int display_results(SMOPS_CTX *ctx, FILE *fp, char *filename_a, char *filename_b
     char *type_to_string[] = TYPE_MAP_STRING;
     switch(result->result_type) {
         case TRACE_SUM:
+            fprintf(fp, "%s\n", type_to_string[result->type]);
             switch(result->type) {
                 case INT:
                     fprintf(fp, "%d\n", result->result_data.trace.i);
@@ -105,6 +106,8 @@ int display_results(SMOPS_CTX *ctx, FILE *fp, char *filename_a, char *filename_b
 */
 int SMOPS_RESULT_present(SMOPS_CTX *ctx, char *filename_a, char *filename_b)
 {
+    //If no result set then no result should be printed, but is not an error
+    if(ctx->result == NULL) {return 1;}
     char *op_to_string[] = OP_MAP_STRING;
     char *op_string = op_to_string[ctx->operation];
     int result;

@@ -1,0 +1,80 @@
+ad float
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9983
+	8 Thread Speed Up: 0.9157
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9971
+	8 Thread Speed Up: 0.9832
+
+ad int
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 2.2093
+	8 Thread Speed Up: 1.8038
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9989
+	8 Thread Speed Up: 0.9763
+
+mm float
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.8018
+	8 Thread Speed Up: 1.8051
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9739
+	8 Thread Speed Up: 0.9578
+
+mm int
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.8372
+	8 Thread Speed Up: 1.8114
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9880
+	8 Thread Speed Up: 0.9682
+
+sm float
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9997
+	8 Thread Speed Up: 0.9979
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.0267
+	8 Thread Speed Up: 1.0144
+
+sm int
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.9940
+	8 Thread Speed Up: 1.0082
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.0038
+	8 Thread Speed Up: 1.0089
+
+tr float
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 2.6014
+	8 Thread Speed Up: 1.6993
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.0803
+	8 Thread Speed Up: 0.0316
+
+tr int
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 2.7433
+	8 Thread Speed Up: 1.7246
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.0481
+	8 Thread Speed Up: 0.0239
+
+ts float
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.7274
+	8 Thread Speed Up: 1.6309
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.0804
+	8 Thread Speed Up: 0.0464
+
+ts int
+Operation Speed Up for Dimension 1024
+	4 Thread Speed Up: 1.7194
+	8 Thread Speed Up: 1.5938
+Load Speed Up for Dimension 1024
+	4 Thread Speed Up: 0.0461
+	8 Thread Speed Up: 0.0241
+

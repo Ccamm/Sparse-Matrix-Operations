@@ -31,12 +31,20 @@ int MATRIX_OP_transpose(SMOPS_CTX *ctx, MATRIX *result, MATRIX *matrix)
         return 0;
     }
 
+    MATRIX_DATA *r_values = result->coo_data->values;
+    int *r_coords_i = result->coo_data->coords_i;
+    int *r_coords_j = result->coo_data->coords_j;
+
+    MATRIX_DATA *m_values = matrix->coo_data->values;
+    int *m_coords_i = matrix->coo_data->coords_i;
+    int *m_coords_j = matrix->coo_data->coords_j;
+
     switch(ctx->thread_num) {
         case 1:
             for(int i = 0; i < non_zero_size; i++) {
-                result->coo_data->coords_i[i] = matrix->coo_data->coords_j[i];
-                result->coo_data->coords_j[i] = matrix->coo_data->coords_i[i];
-                result->coo_data->values[i] = matrix->coo_data->values[i];
+                r_coords_i[i] = m_coords_j[i];
+                r_coords_j[i] = m_coords_i[i];
+                r_values[i] = m_values[i];
             }
             break;
         default:
@@ -45,9 +53,9 @@ int MATRIX_OP_transpose(SMOPS_CTX *ctx, MATRIX *result, MATRIX *matrix)
                 int i;
                 #pragma omp for
                 for(i = 0; i < non_zero_size; i++) {
-                    result->coo_data->coords_i[i] = matrix->coo_data->coords_j[i];
-                    result->coo_data->coords_j[i] = matrix->coo_data->coords_i[i];
-                    result->coo_data->values[i] = matrix->coo_data->values[i];
+                    r_coords_i[i] = m_coords_j[i];
+                    r_coords_j[i] = m_coords_i[i];
+                    r_values[i] = m_values[i];
                 }
             }
             break;

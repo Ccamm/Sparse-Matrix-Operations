@@ -66,6 +66,14 @@ void sequential_addition(MATRIX_DATA *dense_matrix, CSR_DATA *csr_a, CSR_DATA *c
 void parallel_addition(SMOPS_CTX *ctx, MATRIX_DATA *dense_matrix, CSR_DATA *csr_a,
                         CSR_DATA *csr_b, TYPE type, int rows)
 {
+    MATRIX_DATA *a_nnz = csr_a->nnz;
+    int *a_ia = csr_a->ia;
+    int *a_ja = csr_a->ja;
+
+    MATRIX_DATA *b_nnz = csr_b->nnz;
+    int *b_ia = csr_b->ia;
+    int *b_ja = csr_b->ja;
+
     #pragma omp parallel num_threads(ctx->thread_num) firstprivate(type, rows)
     {
         #pragma omp single
@@ -74,19 +82,19 @@ void parallel_addition(SMOPS_CTX *ctx, MATRIX_DATA *dense_matrix, CSR_DATA *csr_
             for(int r = 1; r < rows + 1; r++) {
                 #pragma omp task firstprivate(r)
                 {
-                    p_a = csr_a->ia[r-1];
-                    q_a = csr_a->ia[r];
+                    p_a = a_ia[r-1];
+                    q_a = a_ia[r];
                     for(int i = p_a; i < q_a; i++) {
-                        parallel_add_to_dense_elem(dense_matrix, csr_a->nnz[i], type, (r-1)*rows + csr_a->ja[i]);
+                        parallel_add_to_dense_elem(dense_matrix, a_nnz[i], type, (r-1)*rows + a_ja[i]);
                     }
                 }
 
                 #pragma omp task firstprivate(r)
                 {
-                    p_b = csr_b->ia[r-1];
-                    q_b = csr_b->ia[r];
+                    p_b = b_ia[r-1];
+                    q_b = b_ia[r];
                     for(int i = p_b; i < q_b; i++) {
-                        parallel_add_to_dense_elem(dense_matrix, csr_b->nnz[i], type, (r-1)*rows + csr_b->ja[i]);
+                        parallel_add_to_dense_elem(dense_matrix, b_nnz[i], type, (r-1)*rows + b_ja[i]);
                     }
                 }
             }

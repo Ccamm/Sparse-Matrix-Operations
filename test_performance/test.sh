@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 FILE_DIR="../../../input_files"
 
 INPUT_FILES="int64.in
